@@ -33,3 +33,41 @@
 							.removeGlobalOnLayoutListener(this);
 				}
 			}); 
+			
+			
+
+图片处理
+	1、图片的总大小 = 图片的总像素 * 每个像素大小
+	2、加载图片
+		*图片像素过大易造成内存溢出
+	3、解决办法
+		*先缩放图片，再加载
+	4、示例
+		*计算缩放比例
+			图片宽高：2400 * 3200
+			屏幕宽高：320 * 480
+			宽度缩放比例：2400 / 320 = 7
+			高度缩放比例：3200 / 480 = 6
+			宽高缩放比例采用统一值 7  (哪个大用哪个，使之尽可能的缩放到位)
+		*缩放方法1 (易失帧，不适用于对图片质量有要求的应用)
+			使用BitmapFactory.Options
+				Options opts = new Options();
+				opts.inJustDecodeBounds = true;(设置true时，BitmapFactory的decodeFile(String path，Options opt)并不会返回一个Bitmap对象，但是会返回图片的宽高大小)
+				获取到图片宽高
+					int width = opts.outWidth;
+					int height = opts.outHeight;
+				获取屏幕宽高
+					Display dp = getWindowManager().getDefaultDisplay();
+					int screenWidth = dp.getWidth();
+					int screenHeight = dp.getHeight();
+				计算缩放比例
+					int scaleWidth = width / screenWidth;
+					int scaleHeight = height / screenHeight;
+					int scale = Math.max(scaleWidth,scaleHeight);
+				设置缩放比例
+					opts.inSampleSize = scale;
+					opts.inJustDecodeBounds = false;
+					Bitmap bm = BitmapFactory.decodeFile("图片路径",opts); (或者其他获取bitmap对象的方法)
+					view.setImageBitmap(bm);
+					
+		*使用软引用进行图片缓存
