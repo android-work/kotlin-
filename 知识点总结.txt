@@ -70,4 +70,312 @@
 					Bitmap bm = BitmapFactory.decodeFile("图片路径",opts); (或者其他获取bitmap对象的方法)
 					view.setImageBitmap(bm);
 					
-		*使用软引用进行图片缓存
+加载超宽高图片：
+	通过BitmapRegionDecoder
+					
+	
+fragment的事务中commit和commitAllowingStateLoss的区别：
+	在Activity和FragmentActivity内的onSaveInstanceState方法保存了fragment的状态。在onSaveInstanceState方法后调用commit和commitAllowingStateLoss会引起
+	一种问题：因内存不足而把不显示在前台的 activity （带有fragment）销毁，之后用户再回到此 activity 页面时，是会丢失在onSaveInstanceState后调用commit
+	方法提交的页面状态信息！此时commit就会报错。而commitAllowingStateLoss不会报错，它不会对状态进行检测
+
+
+sharedpreferences的apply和commit的区别：
+	apply：他的提交是异步的，先将更改的内容提交到内存中，然后异步将修改的内容写入到磁盘中，且提交无返回值
+	commit：提交时同步的，直接将修改的内容提交到本地磁盘，如果多线程同时更改，则需要等待一个完成后，再继续下一个，效率低，且提交有返回值，提交是否成功
+
+
+java内存区域详解
+	
+	程序计数器：是线程私有的一块内存，每个线程都有独立的程序计数器，各线程之间互不影响。目的是保存线程切换的位置地址，	保证多线程切换的时候，能够正确的切换回原来位置（程序计数器也是唯一一个不会发送OOM的内存区域）
+	
+	Java堆：该内存是线程所共享的，也是gc主要活动的区域，主要存储一些对象实例
+	
+	方法去：是线程共享的区域，主要存放 常量、静态变量
+	java栈：是线程私有的，主要存放一些局部变量（基本数据类型，对象引用，方法返回地址），每创建一个线程都会为该线程分配					   一个Java栈，在执行每个方法同时又会创建一栈帧（存放布局变量等信息）。每个方法从执行到结束，也就对应一个栈帧从入栈到出栈的过程。
+	
+	本地方法栈：主要是服务于虚拟机用到的Native方法
+	
+	
+Handler机制：
+	handler主要有Handler、Message、MessageQuery、Looper构成：我们在创建一个Handler的前提是我们必须要给当前的线程维护一个Looper对象之后才
+	能够成功创建Handler。在主线程中创建一个Handler是不需要我们手动去创建一个Looper对象，主线程中默认给我创建好了，在子线程中，需要我们手动
+	创建一个Looper通过(Looper.prepare())，在实例化Looper时，也会创建一个MessageQuery消息队列，用于消息的存储。然后手动去开启消息循环
+	(Looper.loop())不断地从MessageQuery中获取消息，拿到消息后msg.target.dispatchMessage <--等价-->(handler.dispatchMessage) 最终交由handler.handlerMessage()进行消息处理，如果没有消息则处于阻塞状态，等待消息队列中有消息。
+	
+	主线程中loop阻塞为什么不会anr：
+		在主线程中，如果退出消息循环的就是退出程序，同时，只要消息循环没有阻塞能够及时的处理消息就不会发生anr，而且发生anr不是因为主线程阻塞，而是在消
+		息处理的时候造成了长时间无法处理结束，导致view刷新不及时，而造成的
+
+	
+线程与多线程：
+
+
+线程池：
+	线程池的作用：
+		1、合理的控制最大的并发数，避免过多创建线程造成线程间争夺内存资源而卡顿等
+		2、避免频繁的创建和回收对象，造成性能上的开销
+		3、能够方便的对线程进行管理
+	如何创建线程：
+		可通过new ThreadPoolExecutor(corePoolSize,maximumPoolSize,keepAliveTime,unit,workQueue,threadFactory,handler)创建一个线程池
+			corePoolSize:最大核心线程数
+			maximumPoolSize:最大线程数
+			keepAliveTime:非核心线程数的空闲时间
+			unit:时间单位
+			workQueue:任务队列
+			threadFactory:线程工厂(自定义一个线程工厂ThreadFactory，定制新线程的名称，所属线程组，优先级，守护状态等信息)
+			handler:处理任务栈饱和的机制
+			
+		workQueue种类：
+			1、直接提交 SynchronousQueue(一般设置线程池是无界的)
+				如果当前有几个线程正在执行任务没有结束，这时来了一个任务a，当前还没有达到corePoolSize，则将a加入任务队列中，此时，任务b来了，由于之前
+				任务都没有结束，这是任务b是无法加入到队列中，则会创建一个新线程来执行任务b，然后任务c过来了，由于前面任务都没有结束，而此时线程数已达
+				maximumPoolSize，并且任务a也在任务队列中，所以任务c无法进入任务队列，此时只能执行任务饱和策略机制
+				
+			2、无界队列 LinkedBlockingQueue
+			3、有界队列 ArrayBlockingQueue
+			 
+		通过execute(Runnable)/sumbit(Runnable)往线程池中添加任务
+			execute():添加任务没有返回值，不知道任务是否被线程池成功执行
+			sumbit():添加任我有返回值，返回一个Future对象判断是否执行成功，通过Future.get()能够获取返回值
+			
+		通过shutdown()/shutdownNow()结束线程池
+			shutdown():清空任务队列中的任务，等待正在执行的任务结束后，关闭线程池
+			shutdNow():停止正在执行的任务，清空任务队列中的任务，关闭线程池(遍历线程池中的工作线程，然后逐个调用线程的interrupt方法来中断线程)
+		
+		四种拒绝策略:
+			1、AbortProlicy：直接抛异常，默认处理机制
+			2、DiscardProlicy：不处理任务
+			3、DisCardOldsetProlicy：丢弃任务栈中末尾的任务，将新任务添加进末尾
+			4、CallerRunProlicy：当有任务添加到线程池被拒绝时该机制会将任务会退给调用者，会在调用了execute的线程中执行任务，
+				从而阻止主线程向线程池提交新的任务
+				
+		Executors中提供四种创建线程池：
+			1、newCachedThredPool：只有非核心线程，并且无界，线程空闲60s后无任务被回收，适用于量大且耗时较短的任务(SynchronousQueue任务队列)
+			2、newFixedThreadPool:是线程数固定的，且都是核心线程数(LinkedBlockingQueue任务队列)
+			3、newSingleThreadPool：只有一个核心线程(LinkedBlockingQueue任务队列)
+			4、newScheduledThreadPool：核心线程数固定，非核心线程数是无界，当非核心线程闲置会被立即回收，主要用于执行定时任务和具有固定周期的重复任务
+
+			
+内存泄露：对象在使用完毕后，在垃圾回收内存时，本该回收该内存，但是无法回收
+	造成的原因：
+		1、资源使用完毕后没有关闭(流、数据库查询、动态注册广播未取消注册、页面销毁，弹窗未关闭等)
+		2、匿名内部类持有外部类的引用
+		3、持有强引用对象、持有对象什么周期过长
+		4、webview的内存泄露
+	
+	避免处理：
+		1、使用静态内部类+软引用的使用
+		2、资源使用后及时关闭
+		3、上下文尽量使用application，减少activity.this的使用
+		4、避免使用静态activity变量、单例中传入的上下文不要用activity.this
+		5、bitmap对象在使用完后，及时调用recycle()
+		6、webview尽量使用代码中创建，在页面退出后，需将webview从布局中移除，在调用webview.destory()释放
+		
+		
+创建对象几种方法：
+	1、通过new关键字创建一个强引用对象
+	2、反射，通过字节码获对象调用newInstance()获取对象
+	3、反序列化
+
+
+LinearLayout和RelativeLayout性能比较：
+	RelativeLayout会使子view调用两次measure方法，而LinearLayout只调用一次，但是如果LinearLayout设置了weight属性，也会调用两次measure。
+	在相同布局层级的情况下，使用Linearlayout会更由于RelativeLayout
+	如果LinearLayout层级过多，使用RelativeLayout会更优
+	
+	
+Android性能优化：
+	1、内存优化：
+	2、ui优化：
+	3、速度优化：
+	4、电量优化：
+	5、启动优化：
+	
+	
+Android内存优化：
+	对象引用的优化：适当的使用软引用
+	内存的复用：多使用线程池，ListView条目复用
+	图片优化：图片的颜色模式、降低图片大小
+	字符串拼接时，减少String的对象拼接，多使用StringBuffer、StringBuilder
+	自定义view时，不要再onDraw中创建对象，因为该方法会多次执行，这样就会频繁创建对象
+	1、尽量避免内存泄漏
+	2、避免频繁的创建和回收对象，避免造成内存抖动，如：频繁的使用string去拼接其他的对象
+	3、对listview条目的复用
+
+	
+invalidate()和postInvalidate() 的区别
+	invalidate():是用来刷新View的，必须是在UI线程中进行工作
+	postInvalidate():允许在工作线程中被调用
+	
+	
+ListView的复用机制：
+	主要是通过复用convertView和定义一个viewholder来进行条目的优化
+	1、首先会根据判断convertView是否为null，如果不为null，则直接复用convertView，调用getTag获取viewholder对象，获取其条目的控件进行处理
+		如果convertView为null，直接重新初始化加载条目布局，进行viewholder中的属性初始化，通过setTag进行设置view与viewHolder的绑定
+	2、使用viewholder的原因是为了避免重复多次的调用findviewById方法，造成栈内存溢出
+	
+	
+动画：
+	动画类型：
+		1、视图动画：
+			a、补间动画：作用于视图view，不可操作view的属性(如：颜色、背景)
+				动画类型：透明度(AlphaAnimation)、平移(TranslateAnimation)、旋转(ScaleAnimation)、缩放(RotateAnimation)
+				动画特点：操作view的只是视图的动画，其属性并未改变
+				xml中定义动画：在res/anim/xxxx.xml
+					<scale 命名空间
+						...动画属性../>
+						Animation translateAnimation = AnimationUtils.loadAnimation(this, R.anim.view_animation);// 创建 动画对象 并传入设置的动画效果xml文件
+						mButton.startAnimation(translateAnimation);// 播放动画 
+						
+				注意：数字表示轴点（即操作中心点）上操作 <-> Animation.ABSOLUTE
+					  数字% 是控件自身的操作中心 <-> Animation.RELATIVE_TO_SELF
+					  数字%p 是控件父类布局的操作中心 <-> Animation.RELATIVE_TO_PARENT
+				
+				组合动画：即以上四种动画组合播放
+					xml中定义组合动画：在res/anim/xxxx.xml
+						<set 命名空间
+							...组合控件的共同属性...
+							android:shareinterpolator = “true”// 表示组合动画中的动画是否和集合共享同一个差值器
+							android:startOffset//属性用来延迟单个动画播放时间，默认是全部同时执行
+							<scale //四种动画定义
+								...动画属性.../>
+				对动画的监听：
+					Animation.addListener(AnimatorListener):需要实现4个方法
+					Animation.addListener(AnimatorListenerAdapter):需要动画监听的四个方法中哪个，就实现哪个方法
+					
+				activity切换动画：
+					a、启动动画：
+						Intent intent = new Intent (this,Acvtivity.class);
+						startActivity(intent);
+						overridePendingTransition(R.anim.enter_anim,R.anim.exit_anim);//必须在startActivity后调用，参数分别是进入和退出动画
+					b、退出动画：
+						overridePendingTransition(R.anim.enter_anim,R.anim.exit_anim)//必须要在finish()后被调用才能生效
+				
+				fragment切换动画：
+					fragmentTransaction.setTransition(int transit)；
+						// transit参数说明
+						   1. FragmentTransaction.TRANSIT_NONE：无动画
+						   2. FragmentTransaction.TRANSIT_FRAGMENT_OPEN：标准的打开动画效果
+						   3. FragmentTransaction.TRANSIT_FRAGMENT_CLOSE：标准的关闭动画效果
+					fragmentTransaction.setCustomAnimations(int... customTransit) 自定义动画效果
+					
+			b、帧动画：主要是针对一组预先定义好的图片，每一帧对应一张图片，连贯起来就是一个动画的效果 
+				xml中定义动画：在res/anim/xxxx.xml
+					<animation-list
+						xmlns:android="http://schemas.android.com/apk/res/android"
+						android:oneshot="true" // 设置是否只播放一次，默认为false>
+							<item android:drawable="@drawable/a0" android:duration="100"/> //item = 动画图片资源；duration = 设置一帧持续时间(ms)
+					</animation-list>	
+					iv.setImageResource(R.drawable.knight_attack);// 设置动画
+					animationDrawable = (AnimationDrawable) iv.getDrawable();// 获取动画对象
+					animationDrawable.start();// 开启动画
+					animationDrawable.stop(); // 停止动画
+					
+		2、属性动画：3.0之后的 API 11 (ValueAnimator(先改值，手动赋值给属性)、 ObjectAnimator(先改值，自动赋值给属性))，可作用在任意java对象，不局限于4中动画
+			a、ValueAnimator：通过不断的控制 值 的变化再 不断的手动赋值给对象，从而实现动画的效果
+				①：ValueAnimator.ofInt(int... value)以整数进行从初始值到结束值的过渡变化
+				②：ValueAnimator.ofFloat(float... value)以浮点型进行从初始值到结束值的过渡变化
+				③：ValueAnimator.ofObject(自定义估值器，Object value)以对象进行从初始值到结束值的过渡变化	
+				
+				通过动画的更新监听，ValueAnimator.addUpdateListener(AnimatorUpdateListener)
+				再回调方法中通过ValueAnimator.getAnimatedValue()拿到每次变化的值，赋给view属性来进行动画的更新
+				
+			b、ObjectAnimator：
+			
+			c、xml中定义动画：res/animator/xxx.xml
+				<animator
+					android:valueFrom="0"   // 初始值
+					android:valueTo="100"  // 结束值
+					android:valueType="intType" // 变化值类型 ：floatType & intType
+					...其他属性.../>
+					Animator animator = AnimatorInflater.loadAnimator(context, R.animator.set_animation);  // 载入XML动画
+					animator.setTarget(view); // 设置动画对象
+					animator.start();  // 启动动画 
+					 
+		3、插值器（Interpolator）和估值器（TypeEvaluator）
+			a、插值器：设置属性值 从初始值过渡到结束值的一个变化规律(如：匀速、加速、减速等)
+				应用场景：适用于非线性运动的动画效果
+				插值器的种类：
+					①、android默认的：百度
+					②、自定义的：需要实现Interpolator (补间动画的实现接口)/ TimeInterpolator(属性动画的实现接口)，复写getInterpolation（）
+						通过getInterpolation(float input)方法中，input值默认是一个从 0-1 匀速变化的一个值，是根据动画完成的进度 0%-100% 来计算的
+						而自定义一个插值器，其实是根据input值的变化，根据一些余弦、正弦、正切等数学函数来计算出一个faction值返回，就是实现动画的速率变化
+			
+			b、估值器：设置属性值 从初始值过渡到结束值的变化具体数值，是协助插值器完成非线性动画的
+					估值器(TypeEvaluator):设置动画 如何从初始值 过渡到 结束值 的逻辑
+					自定义估值器：实现TypeEvaluator，重写evaluate(float fraction,Object startValue,Object endValue);在该方法中操作object对象属性
+								
+								eg：// 将动画初始值startValue 和 动画结束值endValue 强制类型转换成Point对象
+									Point startPoint = (Point) startValue;
+									Point endPoint = (Point) endValue;
+									
+									// 根据fraction来计算当前动画的x和y的值
+									float x = startPoint.getX() + fraction * (endPoint.getX() - startPoint.getX());
+									float y = startPoint.getY() + fraction * (endPoint.getY() - startPoint.getY());
+									
+									//根据动画的进度计算得到的坐标来改变对象属性坐标
+									return new Point(x,y);
+		
+		4、组合属性动画：
+			AnimatorSet.play(Animator anim)   ：播放当前动画
+			AnimatorSet.after(long delay)   ：将现有动画延迟x毫秒后执行
+			AnimatorSet.with(Animator anim)   ：将现有动画和传入的动画同时执行
+			AnimatorSet.after(Animator anim)   ：将现有动画插入到传入的动画之后执行
+			AnimatorSet.before(Animator anim) ：  将现有动画插入到传入的动画之前执行
+			
+		5、属性动画的监听：
+			addListener(AnimatorListener)、addListener(AnimatorListenerAdapter)与补间动画一样
+			
+			
+Android类加载器：
+
+
+view的绘制流程：drawBackground()[该方法是私有的，无法重写，一般通过api进行设定]-->onDraw()[绘制主题内容]-->dispatchDraw()[绘制子view]-->onDrawForeground()[6.0,api23 					的时候引入的，用于设定滑动边缘渐变和滑动条以及前景，可以通过View.setForeground()进行设定/android:foreground属性设定]
+	onDraw():针对view自身的绘制
+		1、将绘制代码写在了super.onDraw(Canvas)后面，会覆盖原有控件的内容
+		2、将绘制代码写在了super.onDraw(Canvas)前面，可能会被原有控件内容覆盖
+	dispatchDraw()：针对自定义viewgroup来说的，用户绘制子view的操作
+		应用场景：例如：再LinearLayout中的super.onDraw()方法之后绘制一些效果时，当往viewgroup中添加子view时，之前的绘制内容会被子view所覆盖，所以此时可以把绘制内容放在
+			dispatchDraw()方法中完成，注意，需要再super.dispatchDraw()方法之后，否则依然会被子view覆盖。在super.dispatchDraw()方法之后绘制时间是在，viewGroup和子view的
+			onDraw()方法执行完后再去进行绘制
+		
+		
+Activity横竖屏切换生命周期变化：
+	未设置android:configChangs属性是，横竖屏切换各执行一次生命周期:
+		onCreate()->onStart()->onResume()->onPause()->onSaveInstanceState()->onStop()->onDestroy()->onCreate()->onStart()->onRestoreInstanceState()->onResume()
+	android:configChangs="orientation",横竖屏切换各执行一次生命周期:
+		onCreate()->onStart()->onResume()->onPause()->onSaveInstanceState()->onStop()->onDestroy()->onCreate()->onStart()->onRestoreInstanceState()->onResume()
+	android:configChangs="orientatio|keyboardHidden|screenSizen"，横竖屏切换不执行生命周期方法，而是执行onConfigrationChanged()
+			
+
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+
+仿抖音视频滑动列表分析：
+	SnapHelper：是RecyclerView中新增的一个辅助类(抽象类)，目的是让条目在滑动完之后，条目能够对齐到某一位置，而不是随意停放
+		//SnapHelper的子类
+		LinearSnapHelper：让条目滚动完后，能够停留在中间位置，而不是随意停止
+		PagerSnapHelper：让条目能够像viewpager一样每次滑动只滑动一页且居中显示
+		
+		Fling操作：滑动的惯性，手指离开屏幕开始触发，滚动停止后结束
+		SnapHelper抽象类的三个抽象方法：
+			int findTargetSnaPosition(LayoutManager layoutManager,int velocityX,int velocityY);根据惯性操作的速率，找到recyclerView需要滚动到哪个位置，返回需要滚到到的位置
+			View findSnapView(LayoutManager layoutManager);会根据当前的layoutManager找到最接近对齐位置的view，返回的是需要对齐的view，如果为null，则没有需要对齐的view
+			int[] calculateDistanceToFinalSnap(LayoutManager layoutManager,View targetView);计算itemView当前坐标与需要对齐的坐标之间的距离，数值返回的是对应x、y轴上的距离
+			
+			attachToRecyclerView();是实现SnapHelper依附到RecyclerView的操作，进而辅助RecyclerView条目的对齐滚动
+			LinearSnapHelper、PagerSnapHelper的使用：
+				①：创建对象，直接new
+				②：调用attachToRecyclerView(RecyclerView recyclerView)
+						
+	

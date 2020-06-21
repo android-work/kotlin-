@@ -1,0 +1,192 @@
+	main(){
+		Flutter是没有重载的
+		hello("",10,1.4)-->10和1.4之间是有位置要求的，两者是可以不传值的
+		hello2("",a:10,b:1.3)-->10和1.3位置可以交换，两者可以不传或传单个
+	}
+	函数中位置可选参数：[]
+	int hello(String str,[int a,double b]){}
+	函数中命名可选参数：{}
+	int hello2(String str,{int a ,double b}){}
+	
+	函数作为参数或者返回值（函数一等公民）
+	main(List<String> args){
+		hello3(bar);
+		hello4((a,b){
+			return a+b;
+		});-->50
+		var dome1 = demo();
+		print(dome1(20,30));-->600
+	}
+	void hello3(Function foo){
+		foo();
+	}
+	void bar(){
+		...
+	}
+	匿名函数
+	hello3((){
+		...
+	});
+	箭头函数：函数体只能有一行代码
+	hello3(()=>print("abc"));
+	关键字：typedef 
+	typedef A = int Function(int a,int b);
+	void hello4(A a){
+		a(20 , 30);
+	}
+	==>
+	void hello4(int foo(int a, int b)){
+		foo(20 ,30);
+	}
+	将函数作为返回值
+	A demo(){
+		return (a,b){
+			return a*b;
+		};
+	}
+	
+	特殊的赋值操作符
+		??=   当原来的变量有值则不执行该操作，反正才会执行
+		??  当操作符前面的变量有值，则使用前面的，如果为null则使用后面的
+	级联运算符
+		..
+		eg:main(List<String> args){
+			//一般使用
+			var p = Person();
+			p.name = "";
+			p.eat();
+			p.run();
+			//级联运算符
+			var p = Person()
+				..name = ""
+				..eat()
+				..run(); ===>类似于java的链式调用
+		}
+		
+		class Person{
+			String name;
+			void run(){
+				..
+			}
+			void eat(){
+				..
+			}
+		}
+		
+	定义类
+	main(List<String> args){
+		var p = Person("",0);
+	}
+	class Person{
+		String name;
+		int age;
+		double height;
+		
+		Person(this.name,this.age);//语法糖
+		
+		//命名构造方法
+		Person.withNameAgeHeight(this.name,this.age,this.height);  ==> Person(this.name,this.age,{double.height});
+	}
+	
+	任意类型：dynamic 类似 object
+		区别：object调用子类方法时，编译期会报错
+			  dynamic调用子类方法时，编译不报错，运行时可能会有问题，不安全
+	
+	初始化列表
+		main(List<String> args){
+			
+		}
+		class Person{
+			final String name;
+			final int age;
+			
+			//构造方法花括号里面表示对象已经初始化完了，无法进行常量初始化
+			
+			Person(this.name,{int age}):this.age = age ?? 10{} ==>给age设定一个初始值
+		}
+		
+	构造函数重定向
+		class Person{
+			String name;
+			int age;
+			
+			Person(this.name):this.-internal(name,0);//构造函数重定向
+			Person._internal(this.name,this.age);
+		}
+		
+	判断两个对象是否相等：identical(p1,p2);
+	工厂构造函数：factory修饰
+		特点：可以手动返回一个对象，普通构造函数，不能手动返回
+		class Person{
+			String name;
+			String color;
+			factory Person.withName(String name){
+				...
+				return "";
+			}
+		}
+		
+	flutter的属性没有权限修饰符，通过"_"命名开头来区分私用和公有
+	flutter的set/get方法
+		main(List<String> args){
+			final p = Person();
+			p.setName = "";
+			print(p.getName);
+		}
+		class Person{
+			String name;
+			//set方法
+			set setName(String name){ ---> set setName(String name) => this.name = name;
+				this.name = name;
+			}
+			//get方法
+			String get getName{  --->  String get getName => return this.name;
+				return this.name;
+			} 
+		}
+		
+	类的继承：extends
+		Person(this.name,this.age):super(); //调用父类的构造方法
+	抽象类：abstract
+		无法进行实例化，但是可以通过工厂构造函数进行实例化
+		通过@patch注解进行方法的实现
+	关键子：external-->将方法的声明和实现分离
+	
+	Dart中没有定义接口的关键子，默认所有的类都是隐式接口,与继承不同，无法调用super方法
+		class Running{
+			void run(){}
+		}
+		class Super{
+			void work(){}
+		}
+		class Person implement Super,Running{
+			@Overraid
+			void run(){}
+			
+			@Overraid
+			void work(){}
+		}
+		
+	混入：mixin
+	枚举：enum
+	
+	
+	MaterialApp
+	Scaffold：脚手架--->帮助快速搭建页面======>相当于Android的activity7
+	
+	Widget：(开发中不推荐直接使用Widget)
+		StatefulWidget:有状态的Widget(在运行中，有些状态(数据)需要改变)
+		StatelessWidget:无状态的Widget(内容是确定的，没有状态的改变)
+		
+	Row：可以放多个控件(类似Android中的Layout)
+	
+	@immutable：当前这个类是不可变的，类里面定义的所有的东西都是final的
+	
+	
+	控件：
+		button类：
+			RaisedButton：带有阴影效果的按钮
+			FlatButon：普通的按钮
+			OutlineButton：点击带有动效按钮
+			FloatingActionButton：右下角圆形的➕按钮
+	
