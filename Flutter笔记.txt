@@ -173,6 +173,9 @@
 	
 	MaterialApp
 	Scaffold：脚手架--->帮助快速搭建页面======>相当于Android的activity7
+		appBar:设置actionBar标题
+		body:页面组件
+		theme:主题样式(ThemeDate(primarySwatch:颜色值))
 	
 	Widget：(开发中不推荐直接使用Widget)
 		StatefulWidget:有状态的Widget(在运行中，有些状态(数据)需要改变)
@@ -183,10 +186,134 @@
 	@immutable：当前这个类是不可变的，类里面定义的所有的东西都是final的
 	
 	
-	控件：
+	组件：
+		Container:容器组件，详细属性看源码
+			decoration:BoxDecoration(
+				color:颜色  // 设置背景色
+				border：Border.all( //边框
+					color：颜色 //边框颜色
+					width:  //边框宽度
+				)
+				borderRadius:BorderRadius.all(Radius.circular(圆角半径)) //边框圆角/圆形
+			)
+			padding:EdgeInsets.all(padding值) // 四个边的padding值
+			padding:EdgeInsets.fromLTRB(四个边padding值) //分别设置四个边的padding值
+			transform:Matrix4.(translationValues 平移、rotationZ 旋转、diagonal3Values 缩放等)
+			alignment:Alignment. //内容基于容器的居中的位置
+			
+			
+			
+		Text:文本组件，详细属性看源码
+			textAlign:文本对齐方式
+			textDirection：文本方向
+			overflow：文本超出的一个现实状态，(clip 裁剪、fade 渐隐、ellipsis 省略号)
+			textScaleFactor：文字显示倍率(放大缩小)
+			
+		TestStyle:文本样式组件，详细属性看源码
+			letterSpacing:文本间间隙(负值文本更紧凑)
+			fontStyle:文字样式(italic 斜体、normal 正常样式)
+			fontWeight：字体粗细(bold 粗体、normal 正常体)FontWeight.获取系统字体粗细
+			decoration:文字装饰线(none 无线、lineThrough 删除线、overline 上划线、underline 下划线)
+			decorationColor：装饰线颜色
+			decorationStyle：装饰线风格(double 两根线、solid 一根实线、wavy 波浪线、dashed/dotted 虚线)
+
 		button类：
 			RaisedButton：带有阴影效果的按钮
 			FlatButon：普通的按钮
 			OutlineButton：点击带有动效按钮
 			FloatingActionButton：右下角圆形的➕按钮
+			1、去除按钮默认的一个margin值：materialTapTargetSize:MaterialTapTargetSize.shrinkWrap,去除默认值的padded属性构成宽高不足48px的情况
+			2、设置button的大小
+				Column(
+					children:<Widget>[
+						ButtonTheme(
+							minWidth:30,
+							height:30,
+							child:FlatButton(
+								padding:EdgeInsets.all(0),
+								color:Color.red,
+								materialTapTargetSize:MaterialTapTargetSize.shrinkWrap,
+								child:Text("button"),
+								textColor:Color.white,
+								onPressed:(){"点击事件"},
+							)
+						)
+					]
+				)
+		Image图片，使用建议外面套一层Container：
+			Container(
+				child:Image.network(
+					"",
+					alignment:图片相对容器的位置
+					
+					color：
+					colorBlendMode:BlendMode.    //color 、colorBlendMode结合使用，相当于Android中的tint属性
+					
+					fit:BoxFit.(fill 全图显示，图片被拉伸，填充父容器、contain 全图显示，按原比例显示 cover 			 图片需要填充整个容器且不变型，可能被拉伸、裁剪、fitWidth\fitHeight 宽/高填充)    //图片的填充模式， 相当于Android中的scaleType属性
+					repeat：ImageRepeat.(repeat x、y轴方向都进行平铺(注：平铺不是铺满，而是类似复制图片)、repeatX/repeatY x/y轴方向平铺)//平铺
+				)
+			)
+			
+			Image(
+				image:NetworkImage("url") 网络图片,
+				width:
+				height: // Image的宽高设置，不是设置图片宽高，而是结合ClipOver使用，展示圆形还是椭圆
+				
+				fit:BoxFit.    ,设置图片填充，类似Android的scaltype属性  BoxFit.fitWidth(宽度一定，高度自适应)
+				alignment:Alignment.    ,设置图片在Image里的位置
+				alignment:Alignment(x,y),设置图片的一个位置x,y的范围是(-1,1),当超过这个范围，图片就是被移出
+			)
+			1、占位图：
+				FadeInImage(
+					fadeOutDuration:Duration(
+						milliseconds: 2//可以传小时，天，分，秒
+					)  ,//设置图片退出的动画时间
+					fadeInDuration:Duration(
+						milliseconds: 2//可以传小时，天，分，秒
+					)  ,//设置图片进入的动画时间
+					placeholder:AssetImage(""),//缓冲预览图片
+					image:NetworkImage("")//放一张网络图片
+				)
+				
+			圆角图片：
+				1、通过Container的decoration：BoxDecoration中的
+					a、boraderRadius:BoraderRadius.all(Radius.circular)
+					b、boraderRadius:BoraderRadius.circular()
+				2、通过Container的image:DecorationImage(
+										image:NetworkImage("")
+										fit:BoxFit.cover
+								  )
+				3、ClipOvel(
+					child:Image.network("")，
+					width:,
+					height:,
+					fit:BoxFit.cover
+				)
+			
+			引入本地图片：
+				1、在根目录下新建images目录
+				2、在images下新建2.0x、3.0x 目录
+				3、每个文件中都放入图片
+				4、在pubspec.yaml文件中，在assets：
+												- images/图片名.png
+												- images/2.0x/图片名.png
+												- images/3.0x/图片名.png
+				5、通过Image.asset("images/图片名.png")使用本地图片
+		Icon字体图标：
+			1、字体图标是矢量图(放大不会失真)
+			2、字体图标可以设置颜色
+			3、图标很多时，占据空间更小
+		TextField输入框：
+			TextField(
+				decoration:InputDecoration(
+					labelText:""//类似Android的hint只不过，输入框获焦时，提示文本会上移缩小，并不是消失
+					icon:Icon()//一个提示图标
+					hintText：“”
+				)
+			)
+			1、如何点击按钮获取输入框中的信息
+			声明一个变量：final textEditController = TextEditController();
+			TextField有个属性controller:textEditController//进行绑定
+			在按钮的响应中进行获取：textEditController.text就能够拿到输入框中的数据
+			
 	

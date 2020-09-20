@@ -378,4 +378,8 @@ Activity横竖屏切换生命周期变化：
 				①：创建对象，直接new
 				②：调用attachToRecyclerView(RecyclerView recyclerView)
 						
-	
+Runtime的一些使用：
+	Runntime runntime = Runtime.getRuntime();
+	Process process = runntime.exec("执行的命令");
+	int result = Process.waitFor();方法 将导致当前线程等待，直到该对象的进程结束，才返回调用,0表示正常终止
+	process.gc();触发gc清理垃圾缓存

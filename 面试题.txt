@@ -1,0 +1,48 @@
+一、onSaveInstanceState(Bundle outState)在什么时机会被调用呢？
+	当activity被系统回收，非用户主动调用finish/按返回键销毁activity时，会在onStop()之前调用onSaveInstanceState()方法保存相应的数据
+	只有当activity被系统回收后，重新创建时，会在onStart()之后调用onRestoryInstanceState()恢复数据
+	在onCreate()方法中也可以通过Bundle进行数据恢复，但是，onCreate中的Bundle对象需要做非空判断，而onRestoryInstanceState()的Bundle一定不为null
+
+二、activity的四种启动模式及应用场景
+	standard：标准模式：
+	singleTop：栈顶复用模式：  <------------------>    FLAG_ACTIVITY_SINGLE_TOP:
+	singleTask：栈内单例模式   <------------------>    FLAG_ACTIVITY_CLEAR_TOP
+	singleInstance :堆内单例
+	当激活的activity实例是复用栈内的话，生命周期方法不会走，只调用onNewIntent(Intent intent)函数
+	FLAG_ACTIVITY_NEW_TASK:一般在searvice、广播、fragment中开启activity时，需要配置该标记
+
+三、横竖屏切换生命周期变化
+	没有配置configChanges，会走生命周期
+	配置了configChanges：orientation|screenSize，不走生命周期，只调用onConfigRationChanges()方法
+	配置了configChanges：orientation，即走生命周期，也走onConfigrationChanges()方法
+	
+四、启动其他app的activity
+	1、第一种用action启动		intent.setClassName("包名", "activity的全路径名");  
+	2、第二种用intent设置className或component的办法启动		ComponentName cn = new ComponentName("包名","activity的全路径名"); intent.setComponent(cn);
+	在调用的时候一定要保证在Manifest.xml中设置被启动Activity的exported=true
+	
+五、fragment的生命周期
+	onAttach()->当Fragment与Activity发生关联时调用。
+	onCreate()->创建Fragment时被回调。
+	onCreateView()->每次创建、绘制该Fragment的View组件时回调该方法，Fragment将会显示该方法返回的View 组件。
+	onActivityCreated()->当 Fragment 所在的Activity被启动完成后回调该方法。
+	onStart()->启动 Fragment 时被回调，此时Fragment可见。
+	onResume()->恢复 Fragment 时被回调，获取焦点时回调。
+	onPause()->暂停 Fragment 时被回调，失去焦点时回调。
+	onStop()->停止 Fragment 时被回调，Fragment不可见时回调。
+	onDestoryView()->销毁与Fragment有关的视图，但未与Activity解除绑定。
+	onDestory()->销毁 Fragment 时被回调。
+	onDeath()->与onAttach相对应，当Fragment与Activity关联被取消时调用。
+	
+	1）创建Fragment
+	onAttach() —> onCreate() —> onCreateView() —> onActivityCreated() —> onStart() —> onResume()
+	2）按下Home键回到桌面 / 锁屏
+	onPause() —> onStop()
+	3）从桌面回到Fragment / 解锁
+	onStart() —> onResume()
+	4）切换到其他Fragment
+	onPause() —> onStop() —> onDestroyView()
+	5）切换回本身的Fragment
+	onCreateView() —> onActivityCreated() —> onStart() —> onResume()
+	6） 按下Back键退出
+	onPause() —> onStop() —> onDestroyView() —> onDestroy() —> onDetach()
